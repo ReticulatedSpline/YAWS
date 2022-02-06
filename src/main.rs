@@ -23,14 +23,33 @@ fn main() {
 			  _ => println!("Please respond with y/n."),
 		}
 		print_status(correct_chars, &known_chars);
-		update_guess(&dict_vec);
+		current_guess = update_guess(&mut dict_vec, &mut known_chars, correct_chars);
 	}
 	println!("Nice!");
 }
 
 // Prune the dictionary vector and choose the next guess.
-fn update_guess(dict_vec: &Vec<[char; 5]>) {
-	dict_vec;
+fn update_guess(dict_vec: &mut Vec<[char; 5]>, known_chars: &mut String, correct_chars: [char;5]) -> [char; 5] {
+	//check contained letters
+	let original_dict_size = dict_vec.len();
+	for letter in known_chars.chars() {
+		dict_vec.retain(|&x| x.contains(&letter));
+	}
+	println!("By letter pruned {} words.", original_dict_size - dict_vec.len());
+
+	//check correct letters
+	let mut idx = 0;
+	let original_dict_size = dict_vec.len();
+	for letter in correct_chars {
+		if letter < 'a' || letter > 'z' {
+			continue;
+		}
+		dict_vec.retain(|&x| x[idx] == letter);
+		idx += 1;
+	}
+	println!("By position pruned {} words.", original_dict_size - dict_vec.len());
+
+	return dict_vec[0];
 }
 
 // Reads the dictionary file and returns the contents as a vector.
