@@ -11,8 +11,6 @@ struct GameState {
 	current_guess: [char; 5]
 }
 
-// TODO: Split evaluate_guess into prompt_user and evaluate_guess
-// TODO: Functionalize dictionary length check and program exit
 fn main() {
 
 	let mut game_state = GameState {
@@ -47,7 +45,6 @@ fn main() {
 	println!("Nice!");
 }
 
-// Queries the user for the outcome of the guess.
 fn evaluate_guess(game_state: &mut GameState) {
 
 	print!("Are any new letters in the right position (1..5)? > ");
@@ -91,7 +88,6 @@ fn evaluate_guess(game_state: &mut GameState) {
 	}
 }
 
-// Prune the dictionary vector and choose the next guess.
 fn update_guess(game_state: &mut GameState) {
 	
 	// prune dictionary based on correct letters
@@ -113,14 +109,13 @@ fn update_guess(game_state: &mut GameState) {
 
 	// prune dictionary based on incorrect characters
 	for character in &game_state.incorrect_chars {
-		game_state.dictionary.retain(|&x| ! x.contains(character));
+		game_state.dictionary.retain(|&x| !x.contains(character));
 	}
 
-	println!("{} possibilites remain.", game_state.dictionary.len())
-;	game_state.current_guess = game_state.dictionary.remove(0);
+	println!("{} possibilites remain.", game_state.dictionary.len());
+	game_state.current_guess = game_state.dictionary.remove(0);
 }
 
-// Print a status message to the console.
 fn print_status(game_state: &GameState) {
 	print!("    Status: ");
 	for character in &game_state.correct_chars {
@@ -149,7 +144,6 @@ fn print_starting_status() {
 	println!("-- possibilities remain.");
 }
 
-// Reads the dictionary file and returns the contents as a vector.
 fn read_dictionary_from_file() -> Vec<[char; 5]> {
 	let dict_string = fs::read_to_string("./src/wordle_dict.dat")
 		.expect("Could not read dictionary file.");
