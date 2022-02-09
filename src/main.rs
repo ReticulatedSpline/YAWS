@@ -1,21 +1,32 @@
 use std::io;
 use std::io::{Write};
 use std::fs;
-use std::process;
 
-// TODO: Pack state into a struct
+
+struct GameState {
+	dictionary : Vec<[char; 5]>,
+	correct_chars: [char; 5],
+	misplaced_chars: Vec<(usize, char)>,
+	incorrect_chars: Vec<char>,
+	current_guess: [char; 5]
+}
+
 // TODO: Split evaluate_guess into prompt_user and evaluate_guess
 // TODO: Functionalize dictionary length check and program exit
 fn main() {
-	let mut correct_chars_correct_position = ['\0'; 5];
-	let mut correct_char_wrong_position: Vec<(usize, char)> = Vec::new();
-	let mut wrong_chars_wrong_position: Vec<char> = Vec::new();
-	let mut current_guess = ['S', 'L', 'I', 'C', 'E'];
-	let mut dictionary = read_dictionary_from_file();
+
+	let mut game_state = GameState {
+		dictionary: read_dictionary_from_file(),
+		correct_chars: ['\0'; 5],
+		misplaced_chars: Vec::new(),
+		incorrect_chars: Vec::new(),
+		current_guess: ['S', 'L', 'I', 'C', 'E']
+	};
 
 	print_starting_status();
+
 	loop {
-		print_status(correct_chars_correct_position, correct_char_wrong_position, current_guess);
+		print_status(&game_state);
 		print!("Solved? (y/n) > ");
 		let _ = io::stdout().flush();
 		let mut answer = String::new();
@@ -26,21 +37,18 @@ fn main() {
 		
 		match answer.as_str().trim() {
 			"y" => break,
-			"n" => evaluate_guess(&mut correct_chars_correct_position, &mut correct_char_wrong_position, &mut wrong_chars_wrong_position, &mut current_guess),
-			_ => println!("Please respond with y/n."),
+			"n" => evaluate_guess(&mut game_state),
+			 _  => println!("Please respond with y/n."),
 		}
-		//std::process::Command::new("clear").status().unwrap();
-		current_guess = update_guess(&mut dictionary, correct_chars_correct_position, correct_char_wrong_position, wrong_chars_wrong_position);
+		
+		std::process::Command::new("clear").status().unwrap();
+		update_guess(&mut game_state);
 	}
 	println!("Nice!");
 }
 
 // Queries the user for the outcome of the guess.
-fn evaluate_guess(
-	correct_chars_correct_position: &mut [char],
-	correct_char_wrong_position: &mut Vec<(usize, char)>,
-	wrong_chars_wrong_position: &mut Vec<char>,
-	current_guess: &mut [char]) {
+fn evaluate_guess(game_state: &mut GameState) {
 
 	print!("Are any new letters in the right position (1..5)? > ");
 	let mut correct_chars_input = String::new();
@@ -62,7 +70,7 @@ fn evaluate_guess(
 			continue;
 		}
 		let integer = character.to_digit(10).unwrap() as usize;
-		correct_chars_correct_position[integer - 1] = current_guess[integer - 1];
+		game_state.correct_chars[integer - 1] = game_state.current_guess[integer - 1];
 		incorrect_chars[integer - 1] = false;
 	}
 
@@ -72,81 +80,51 @@ fn evaluate_guess(
 		} else {
 			let integer = character.to_digit(10).unwrap() as usize;
 			incorrect_chars[integer - 1] = false;
-			correct_char_wrong_position.push((integer - 1, current_guess[integer - 1]));
+			game_state.misplaced_chars.push((integer - 1, game_state.current_guess[integer - 1]));
 		}
 	}
 
 	for (index, boolean) in incorrect_chars.iter().enumerate() {
 		if boolean == &true {
-			wrong_chars_wrong_position.push(current_guess[index]);
+			game_state.incorrect_chars.push(game_state.current_guess[index]);
 		}
 	}
 }
 
 // Prune the dictionary vector and choose the next guess.
-fn update_guess(
-	dictionary: &mut Vec<[char; 5]>,
-	correct_chars_correct_position: [char;5],
-	correct_char_wrong_position: Vec<(usize, char)>,
-	wrong_chars: Vec<char>) -> [char; 5] {
+fn update_guess(game_state: &mut GameState) {
 	
-	// right letter right position
-	// prune words not containing known letters in the correct position
-	let mut starting_dictionary_size = dictionary.len();
-	for (index, character) in correct_chars_correct_position.iter().enumerate() {
-		// skip unknowns, represented with \0
-		if !character.is_ascii_alphabetic() {
-			continue;
-		} else {
-			dictionary.retain(|&x| x[index] == *character);
-		}
-	}
-
-	println!("Pruned {} word(s) using correct characters in the correct position.",
-		starting_dictionary_size - dictionary.len());
-
-	if dictionary.len() <= 0 {
-		println!("No possibilities remain.");
-		process::exit(0);
-	}
-
-	// right letter wrong position
-	// prune words not containing wrongly positioned but known characters
-	starting_dictionary_size = dictionary.len();
-	for (index, character) in correct_char_wrong_position {
+	// prune dictionary based on correct letters
+	for (index, character) in game_state.correct_chars.iter().enumerate() {
 		if !character.is_ascii_alphabetic() {
 			continue;
 		}
-		dictionary.retain(|&x| x.contains(&character));
-		dictionary.retain(|&x| x[index] != character);
+		game_state.dictionary.retain(|&x| x[index] == *character);
 	}
 
-	println!("Pruned {} word(s) using correct characters in the wrong position.",
-		starting_dictionary_size - dictionary.len());
-
-	// wrong letter wrong position
-	// prune wrong characters
-	starting_dictionary_size = dictionary.len();
-	for character in wrong_chars {
-		dictionary.retain(|&x| !x.contains(&character));
+	// prune dictionary based on misplaced letters
+	for (index, character) in &game_state.misplaced_chars {
+		if !character.is_ascii_alphabetic() {
+			continue;
+		}
+		game_state.dictionary.retain(|&x| x.contains(&character));
+		game_state.dictionary.retain(|&x| x[*index] != *character);
 	}
 
-	println!("Pruned {} word(s) using known incorrect characters.",
-		starting_dictionary_size - dictionary.len());
-	
-	if dictionary.len() <= 0 {
-		println!("No possibilities remain.");
-		process::exit(0);
+	// prune dictionary based on incorrect characters
+	for character in &game_state.incorrect_chars {
+		game_state.dictionary.retain(|&x| ! x.contains(character));
 	}
-	
-	return dictionary.remove(0);
+
+	println!("{} possibilites remain.", game_state.dictionary.len())
+;	game_state.current_guess = game_state.dictionary.remove(0);
 }
 
 // Print a status message to the console.
-fn print_status(correct_chars:[char; 5], known_chars: Vec<(usize, char)>, current_guess:[char; 5]) {
+fn print_status(game_state: &GameState) {
 	print!("    Status: ");
-	for character in correct_chars {
-		if character == '\0' {
+	for character in &game_state.correct_chars {
+		if character == &'\0' {
 			print!("_");
 		}
 		else {
@@ -155,19 +133,20 @@ fn print_status(correct_chars:[char; 5], known_chars: Vec<(usize, char)>, curren
 	}
 	print!(" | ");
 
-	for tuple in known_chars {
-		let character = tuple.1;
-		if character != '\0' {
+	for (_, character) in &game_state.misplaced_chars {
+		if character.is_ascii_alphabetic() {
 			print!("{} ", character);
 		}
 	}
-	println!("\nNext guess: {:?}", current_guess);
+
+	let guess_string = String::from_iter(game_state.current_guess.into_iter());
+	println!("\nNext guess: {:}", guess_string);
 	println!("            12345");
 }
 
 fn print_starting_status() {
 	std::process::Command::new("clear").status().unwrap();
-	println!("Pruned -- word(s).");
+	println!("-- possibilities remain.");
 }
 
 // Reads the dictionary file and returns the contents as a vector.
