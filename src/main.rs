@@ -59,23 +59,23 @@ fn evaluate_guess(game_state: &mut GameState) {
 	.unwrap();
 	
 	let mut incorrect_chars = [true; 5];
-	for character in correct_chars_input.chars() {
-		if character < '1' || character > '5' {
+	for input in correct_chars_input.chars() {
+		if input < '1' || input > '5' {
 			continue;
 		}
-		let integer = character.to_digit(10).unwrap() as usize;
+		let integer = input.to_digit(10).unwrap() as usize;
 		game_state.correct_chars[integer - 1] = game_state.current_guess[integer - 1];
 		incorrect_chars[integer - 1] = false;
 	}
 
-	for character in known_chars_input.chars() {
-		if character < '1' || character > '5' {
+	for input in known_chars_input.chars() {
+		if input < '1' || input > '5' {
 			continue;
-		} else {
-			let integer = character.to_digit(10).unwrap() as usize;
-			incorrect_chars[integer - 1] = false;
-			game_state.misplaced_chars.push((integer - 1, game_state.current_guess[integer - 1]));
 		}
+		let integer = input.to_digit(10).unwrap() as usize;
+		incorrect_chars[integer - 1] = false;
+		game_state.misplaced_chars.push((integer - 1, game_state.current_guess[integer - 1]));
+
 	}
 
 	for (index, boolean) in incorrect_chars.iter().enumerate() {
@@ -123,7 +123,8 @@ fn update_guess(game_state: &mut GameState) {
 
 fn print_status(game_state: &GameState) {
 	let remaining = game_state.dictionary.len();
-	print!("{} possibilities remain", remaining);
+	let guess_string = String::from_iter(game_state.current_guess.into_iter());
+	print!("{} choice(s) remain", remaining);
 	if remaining <= 5 {
 		print!(": {}\n", dictionary_to_string(&game_state.dictionary));
 	} else {
@@ -147,7 +148,6 @@ fn print_status(game_state: &GameState) {
 		}
 	}
 
-	let guess_string = String::from_iter(game_state.current_guess.into_iter());
 	println!("\nNext guess: {:}", guess_string);
 	println!("            12345");
 }
@@ -174,15 +174,10 @@ fn read_dictionary_from_file() -> Vec<[char; 5]> {
 
 fn dictionary_to_string(dictionary:&Vec<[char ; 5]>) -> String {
 	let mut string = String::new();
-	let len = dictionary.len();
-	let mut idx = 1;
 	for array in dictionary {
 		let newstr = String::from_iter(array);
 		string.push_str(&newstr);
-		if len != idx {
-			string.push_str(", ");
-		}
-		idx += 1;
+		string.push_str(" ");
 	}
 	return string;
 }
