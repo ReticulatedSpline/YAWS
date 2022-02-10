@@ -20,8 +20,6 @@ fn main() {
 		current_guess: ['S', 'L', 'I', 'C', 'E']
 	};
 
-	print_starting_status();
-
 	loop {
 		print_status(&game_state);
 		print!("Solved? (y/n) > ");
@@ -115,6 +113,15 @@ fn update_guess(game_state: &mut GameState) {
 		game_state.dictionary.retain(|&x| !x.contains(&character));
 	}
 
+	if let Some(top) = game_state.dictionary.pop() {
+		game_state.current_guess = top;
+	} else {
+		println!("No possibilities remain.");
+		std::process::exit(1);
+	}
+}
+
+fn print_status(game_state: &GameState) {
 	let remaining = game_state.dictionary.len();
 	print!("{} possibilities remain", remaining);
 	if remaining <= 5 {
@@ -122,10 +129,7 @@ fn update_guess(game_state: &mut GameState) {
 	} else {
 		print!(".\n");
 	}
-	game_state.current_guess = game_state.dictionary.remove(0);
-}
 
-fn print_status(game_state: &GameState) {
 	print!("    Status: ");
 	for character in &game_state.correct_chars {
 		if character == &'\0' {
@@ -146,11 +150,6 @@ fn print_status(game_state: &GameState) {
 	let guess_string = String::from_iter(game_state.current_guess.into_iter());
 	println!("\nNext guess: {:}", guess_string);
 	println!("            12345");
-}
-
-fn print_starting_status() {
-	std::process::Command::new("clear").status().unwrap();
-	println!("-- possibilities remain.");
 }
 
 fn read_dictionary_from_file() -> Vec<[char; 5]> {
