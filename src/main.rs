@@ -2,7 +2,6 @@ use std::io;
 use std::io::{Write};
 use std::fs;
 
-
 struct GameState {
 	dictionary : Vec<[char; 5]>,
 	correct_chars: [char; 5],
@@ -82,8 +81,10 @@ fn evaluate_guess(game_state: &mut GameState) {
 	}
 
 	for (index, boolean) in incorrect_chars.iter().enumerate() {
-		if boolean == &true {
-			game_state.incorrect_chars.push(game_state.current_guess[index]);
+		let character = game_state.current_guess[index];
+		// don't push anything in correct chars as there could be duplicates
+		if *boolean && !game_state.correct_chars.contains(&character) {
+			game_state.incorrect_chars.push(character);
 		}
 	}
 }
@@ -91,11 +92,13 @@ fn evaluate_guess(game_state: &mut GameState) {
 fn update_guess(game_state: &mut GameState) {
 	
 	// prune dictionary based on correct letters
-	for (index, character) in game_state.correct_chars.iter().enumerate() {
-		if !character.is_ascii_alphabetic() {
+	for (index, correct_char) in game_state.correct_chars.iter().enumerate() {
+		if !correct_char.is_ascii_alphabetic() {
 			continue;
 		}
-		game_state.dictionary.retain(|&x| x[index] == *character);
+		// remove discovered characters from misplaced_chars
+		game_state.misplaced_chars.retain(|&(_, mischar)| mischar != *correct_char);
+		game_state.dictionary.retain(|&x| x[index] == *correct_char);
 	}
 
 	// prune dictionary based on misplaced letters
@@ -109,10 +112,16 @@ fn update_guess(game_state: &mut GameState) {
 
 	// prune dictionary based on incorrect characters
 	for character in &game_state.incorrect_chars {
-		game_state.dictionary.retain(|&x| !x.contains(character));
+		game_state.dictionary.retain(|&x| !x.contains(&character));
 	}
 
-	println!("{} possibilites remain.", game_state.dictionary.len());
+	let remaining = game_state.dictionary.len();
+	print!("{} possibilities remain", remaining);
+	if remaining <= 5 {
+		print!(": {}\n", dictionary_to_string(&game_state.dictionary));
+	} else {
+		print!(".\n");
+	}
 	game_state.current_guess = game_state.dictionary.remove(0);
 }
 
@@ -162,4 +171,19 @@ fn read_dictionary_from_file() -> Vec<[char; 5]> {
 		}
 	}
 	return dict_vec;
+}
+
+fn dictionary_to_string(dictionary:&Vec<[char ; 5]>) -> String {
+	let mut string = String::new();
+	let len = dictionary.len();
+	let mut idx = 1;
+	for array in dictionary {
+		let newstr = String::from_iter(array);
+		string.push_str(&newstr);
+		if len != idx {
+			string.push_str(", ");
+		}
+		idx += 1;
+	}
+	return string;
 }
