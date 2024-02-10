@@ -44,37 +44,37 @@ fn main() {
 
 fn evaluate_guess(game_state: &mut GameState) {
 
-	print!("Are any new letters in the right position (1..5)? > ");
+	print!("Are any new letters in the right position (0..4)? > ");
 	let mut correct_chars_input = String::new();
 	let _ = io::stdout().flush();
 	io::stdin()
 	.read_line(&mut correct_chars_input)
 	.unwrap();
 	
-	print!("Are any new letters in the wrong position (1..5)? > ");
+	print!("Are any new letters in the wrong position (0..4)? > ");
 	let mut known_chars_input = String::new();
 	let _ = io::stdout().flush();
 	io::stdin()
-	.read_line(&mut known_chars_input)
-	.unwrap();
+		.read_line(&mut known_chars_input)
+		.unwrap();
 	
 	let mut incorrect_chars = [true; 5];
 	for input in correct_chars_input.chars() {
-		if input < '1' || input > '5' {
+		if input < '0' || input > '4' {
 			continue;
 		}
-		let integer = input.to_digit(10).unwrap() as usize;
-		game_state.correct_chars[integer - 1] = game_state.current_guess[integer - 1];
-		incorrect_chars[integer - 1] = false;
+		let position = input.to_digit(10).unwrap() as usize;
+		game_state.correct_chars[position] = game_state.current_guess[position];
+		incorrect_chars[position] = false;
 	}
 
 	for input in known_chars_input.chars() {
-		if input < '1' || input > '5' {
+		if input < '0' || input > '4' {
 			continue;
 		}
-		let integer = input.to_digit(10).unwrap() as usize;
-		incorrect_chars[integer - 1] = false;
-		game_state.misplaced_chars.push((integer - 1, game_state.current_guess[integer - 1]));
+		let position = input.to_digit(10).unwrap() as usize;
+		incorrect_chars[position] = false;
+		game_state.misplaced_chars.push((position, game_state.current_guess[position]));
 
 	}
 
@@ -95,7 +95,7 @@ fn update_guess(game_state: &mut GameState) {
 			continue;
 		}
 		// remove discovered characters from misplaced_chars
-		game_state.misplaced_chars.retain(|&(_, mischar)| mischar != *correct_char);
+		//game_state.misplaced_chars.retain(|&(_, mischar)| mischar != *correct_char);
 		game_state.dictionary.retain(|&x| x[index] == *correct_char);
 	}
 
@@ -149,7 +149,7 @@ fn print_status(game_state: &GameState) {
 	}
 
 	println!("\nNext guess: {:}", guess_string);
-	println!("            12345");
+	println!("            01234");
 }
 
 fn read_dictionary_from_file() -> Vec<[char; 5]> {
