@@ -80,8 +80,8 @@ fn evaluate_guess(game_state: &mut GameState) {
 
 	for (index, boolean) in incorrect_chars.iter().enumerate() {
 		let character = game_state.current_guess[index];
-		// don't push anything in correct chars as there could be duplicates
-		if *boolean && !game_state.correct_chars.contains(&character) {
+		// don't push chars from correct/misplaced buckets
+		if *boolean && !game_state.correct_chars.contains(&character) && !game_state.misplaced_chars..iter().any(|&(_, c)| c == character) {
 			game_state.incorrect_chars.push(character);
 		}
 	}
@@ -95,7 +95,7 @@ fn update_guess(game_state: &mut GameState) {
 			continue;
 		}
 		// remove discovered characters from misplaced_chars
-		//game_state.misplaced_chars.retain(|&(_, mischar)| mischar != *correct_char);
+		game_state.misplaced_chars.retain(|&(_, mischar)| mischar != *correct_char);
 		game_state.dictionary.retain(|&x| x[index] == *correct_char);
 	}
 
